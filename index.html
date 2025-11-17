@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Marker als CSS-Blöcke (A/B/C/D)</title>
+<style>
+  :root{
+    --size: min(75vmin, 520px);   /* Gesamtgröße des Markers */
+    --gap: 0px;                   /* Spalt zwischen Zellen (optional) */
+    --bg: #ffffff;                /* Hintergrund */
+    --fg: #111111;                /* Marker-Farbe */
+    --border: 0px;                /* optionaler Außenrahmen */
+  }
+
+  body{
+    margin:0; font-family:system-ui, Arial, sans-serif;
+    background:#f6f7fa; color:#111; display:grid; min-height:100svh;
+    place-items:center; padding:24px;
+  }
+
+  .app{
+    display:grid; gap:16px; width:100%; max-width:800px;
+  }
+
+  .controls{
+    display:flex; flex-wrap:wrap; gap:12px; align-items:center;
+    justify-content:center;
+  }
+  .controls label{ font-weight:600; }
+  .controls select, .controls button{
+    padding:8px 12px; font-size:16px; border-radius:8px; border:1px solid #ccc;
+    background:#fff; cursor:pointer;
+  }
+  .controls button[aria-pressed="true"]{ background:#111; color:#fff; border-color:#111; }
+
+  /* Marker-Container */
+  .marker{
+    width:var(--size);
+    aspect-ratio:1;
+    display:grid;
+    grid-template-columns: repeat(9, 1fr);  /* 9x9 Raster für flexible Form */
+    grid-template-rows: repeat(9, 1fr);
+    gap:var(--gap);
+    background:var(--bg);
+    border: var(--border) solid var(--fg);
+    margin-inline:auto;
+    transition: transform .25s ease;
+  }
+
+  /* Zellen */
+  .cell{ background:var(--bg); }
+  .cell.black{ background:var(--fg); }
+
+  /* Rotation per Daten-Attribut (A=0°, B=90°, C=180°, D=270°) */
+  .marker[data-rot="A"]{ transform: rotate(0deg); }
+  .marker[data-rot="B"]{ transform: rotate(90deg); }
+  .marker[data-rot="C"]{ transform: rotate(180deg); }
+  .marker[data-rot="D"]{ transform: rotate(270deg); }
+
+  footer{
+    text-align:center; opacity:.7; font-size:14px;
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <div class="controls">
+      <label for="rot">Ausrichtung:</label>
+      <select id="rot" aria-label="Ausrichtung wählen">
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+
+      <div role="group" aria-label="Schnellwahl">
+        <button type="button" data-set="A" aria-pressed="true">A</button>
+        <button type="button" data-set="B" aria-pressed="false">B</button>
+        <button type="button" data-set="C" aria-pressed="false">C</button>
+        <button type="button" data-set="D" aria-pressed="false">D</button>
+      </div>
+    </div>
+
+    <div class="marker" id="marker" data-rot="A" aria-label="Marker"></div>
+
+    <footer>
+      Reines CSS für das Raster, minimale JS nur für die Rotation (A/B/C/D).
+    </footer>
+  </main>
+
+<script>
+/*
+  Raster-Definition:
+  Wir nehmen 9x9, damit die „Zacken“ und das mittige Loch sauber positionierbar sind.
+  1 = schwarz, 0 = weiß
+  Das Muster ist so gewählt, dass A wie auf deinem Foto aussieht.
+*/
+const pattern9 = [
+/* y0 */ 1,1,1,1,1,1,1,1,1,
+/* y1 */ 1,1,1,1,1,1,1,1,1,
+/* y2 */ 1,1,0,0,0,0,0,1,1,
+/* y3 */ 1,1,0,1,1,1,0,1,1,
+/* y4 */ 1,1,0,1,0,1,0,1,1,   // mittleres Loch an (4,4) in 0‑Index → bleibt weiß
+/* y5 */ 1,1,0,1,1,1,0,1,1,
+/* y6 */ 1,1,0,0,0,0,0,1,1,
+/* y7 */ 1,1,1,1,1,1,1,1,1,
+/* y8 */ 1,1,1,1,1,1,1,1,1,
+];
+
+// Marker aufbauen (reines CSS für Darstellung, JS nur zum DOM-Befüllen)
+const root = document.getElementById('marker');
+pattern9.forEach(v=>{
+  const d = document.createElement('div');
+  d.className = 'cell' + (v ? ' black' : '');
+  root.appendChild(d);
+});
+
+// Steuerung A/B/C/D
+const select = document.getElementById('rot');
+const buttons = Array.from(document.querySelectorAll('button[data-set]'));
+function setRot(val){
+  root.setAttribute('data-rot', val);
+  select.value = val;
+  buttons.forEach(b => b.setAttribute('aria-pressed', b.dataset.set === val ? 'true' : 'false'));
+}
+select.addEventListener('change', e => setRot(e.target.value));
+buttons.forEach(b => b.addEventListener('click', () => setRot(b.dataset.set)));
+</script>
+</body>
+</html>
